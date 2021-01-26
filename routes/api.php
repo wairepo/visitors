@@ -34,4 +34,5 @@ Route::group(['prefix' => 'units'], function(){
 
 Route::group(['prefix' => 'blocks'], function(){
     Route::get('/', 'BlockController@list');
+    Route::put('/edit/{id}', 'BlockController@edit');
 });

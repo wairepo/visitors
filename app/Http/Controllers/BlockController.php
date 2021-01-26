@@ -63,4 +63,35 @@ class BlockController extends Controller
     return view('block', $data);
 
   }
+
+  public function edit(Request $request, $block_id)
+  {
+    $validator = Validator::make($request->all(), [
+      'block_name' => 'required|max:20'
+    ]);
+
+    if ( $validator->fails() ) {
+      return response()->json([ "success" => false, "message" => $validator->errors() ]);
+    }
+
+    if( !isset($block_id) ) {
+      return response()->json([ "success" => false, "message" => "Block ID not found" ]);
+    }
+
+    $block = Block::find($block_id);
+
+    if( empty($block) ) {
+      return response()->json([ "success" => false, "message" => "Block not found in the system" ]);
+    }
+
+    $updated = $block->update([
+      "name" => $request['block_name'],
+    ]);
+
+    if( $updated ) {
+      return response()->json([ "success" => true, "message" => "Block updated successully" ]);
+    }
+
+    return response()->json([ "success" => false, "message" => "Block failed to update. Try again." ]);
+  }
 }

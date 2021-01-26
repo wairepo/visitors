@@ -32,7 +32,7 @@
 						<tr>
 							<td class="occupant_name" data-id="{{$block['id']}}">{{$block['occupant_name']}}</td>
 							<td class="phone" data-id="{{$block['id']}}">{{$block['phone']}}</td>
-							<td>{{$block['block_name']}}</td>
+							<td><a href="#" data-bs-toggle="modal" data-bs-target="#blockNameModal" data-name="{{$block['block_name']}}" data-id="{{$block['block_id']}}" >{{$block['block_name']}}</a></td>
 							<td>#{{$block['level']}}-{{$block['unit']}}</td>
 							<td>{{$block['visitorEntryCount']}}</td>
 							<td>{{$block['occupancy']}}</td>
@@ -43,7 +43,7 @@
 				@else
 
 					<tr>
-						<td colspan="5">No record found.</td>
+						<td colspan="6">No record found.</td>
 					</tr>
 
 				@endif
@@ -67,6 +67,39 @@
 				</ul>
 			</nav>
 		@endif
+	</div>
+</div>
+<div class="modal fade" id="blockNameModal" tabindex="-1" aria-labelledby="blockNameModalLabel" aria-hidden="true">
+	<div class="modal-dialog modal-dialog-centered">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title">Block</h5>
+				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+			</div>
+			<div class="modal-body">
+				<div class="row">
+					<div class="col-12">
+						<div class="form-floating mb-3">
+							<input type="text" class="form-control" id="block_name">
+							<label for="block_name">Block name</label>
+							<div class="invalid-feedback text-start name_error"></div>
+						</div>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-12">
+						<ul class="list text-start error-list"></ul>
+					</div>
+				</div>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+				<button type="button" class="btn btn-primary" id="saveBlockBtn">
+					<span class="submit-text">Save</span>
+					<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+				</button>
+			</div>
+		</div>
 	</div>
 </div>
 <div class="modal fade" id="blockModal" tabindex="-1" aria-labelledby="blockModalLabel" aria-hidden="true">
@@ -142,10 +175,16 @@
 							<button class="btn btn-outline-secondary dropdown-toggle block_name_new" type="button" data-bs-toggle="dropdown" aria-expanded="false">Block</button>
 							<ul class="dropdown-menu">
 								@foreach( $blocks as $block )
-								<li><a class="dropdown-item" data-block-id-new="{{$block['id']}}" data-block-name-new="{{$block['name']}}" onclick="selectedBlock(this)">{{ $block['name'] }}</a></li>
+								<li><a class="dropdown-item add_new_block" data-block-id-new="{{$block['id']}}" data-block-name-new="{{$block['name']}}" onclick="selectedBlock(this)">{{ $block['name'] }}</a></li>
 								@endforeach
+								<li><a class="dropdown-item add_new_block" data-block-id-new="0" data-block-name-new="" >Add New</a></li>
 							</ul>
 							<input type="text" id="level_unit" class="form-control form-control-lg has-validation" placeholder="09-8888">
+						</div>
+					</div>
+					<div class="row mt-3">
+						<div class="col-12">
+							<input type="text" id="block_name_new" class="d-none form-control form-control-lg has-validation" placeholder="Block Name">
 						</div>
 					</div>
 				</div>
@@ -207,6 +246,19 @@
 			clearError()
 		})
 
+		var blockNameModal = document.getElementById('blockNameModal')
+		blockNameModal.addEventListener('show.bs.modal', function (event) {
+			var button = event.relatedTarget
+			var title = button.getAttribute('data-name')
+			block_id = button.getAttribute('data-id')
+
+			var modalTitle = blockNameModal.querySelector('.modal-title')
+
+			modalTitle.textContent = 'Update Block ' + title
+
+			$("#block_name").val(title);
+		})
+
 		var deleteBlockModal = document.getElementById('deleteBlockModal')
 		deleteBlockModal.addEventListener('show.bs.modal', function (event) {
 			var button = event.relatedTarget
@@ -261,6 +313,45 @@
 		}
 	})
 
+	$("#saveBlockBtn").on("click", function(e){
+		$.ajax({
+			type: "PUT",
+			url: "/api/blocks/edit/"+block_id,
+			data: {
+				"block_name": $("#block_name").val(),
+				"_token": $('meta[name="_token"]').attr('content')
+			},
+			success: function(data) {
+
+				if( data['success'] == true ) {
+
+					show_toast({"message": data['message'], "status": "bg-success"})
+
+					window.location.href = "/blocks?page="+page
+
+				} else {
+
+					if( typeof data['message'] === 'object' ) {
+
+						var html = ""
+
+						$(".error-list").empty()
+
+						Object.values(data['message']).forEach(function (item, index) {
+
+							html += "<li class='text-danger'>" + item + "</li>"
+						});
+
+						$(".error-list").append(html)
+
+					} else {
+						show_toast({"message": data['message'], "status": "bg-danger"})
+					}
+				}
+			}
+		});
+	})
+
 	$("#deleteBtn").on("click", function(e){
 		$.ajax({
 			type: "PUT",
@@ -311,6 +402,15 @@
 		$(".name_error_new").text("")
 		$(".phone_error_new").text("")
 	}
+
+	$(".add_new_block").on("click", function(){
+
+		if( $(this).data("block-id-new") == 0 ) {
+			$("#block_name_new").removeClass("d-none")
+		} else {
+			$("#block_name_new").addClass("d-none")
+		}
+	})
 
 	$("#saveBtn").on("click", function(){
 
@@ -392,6 +492,10 @@
 			$(".spinner-border").addClass("d-none");
 			$(".submit-text").removeClass("d-none");
 			return false;
+		}
+
+		if( block_id_new == 0 ) {
+			block_id_new = $("#block_name_new").val()
 		}
 
 		$.ajax({
