@@ -19,9 +19,9 @@ class VisitorController extends Controller
     $page = isset($request['page']) ? $request['page'] : 1;
 
     if( isset($request['unit']) && $request['unit'] != 0 ) {
-      $visitors = VisitorEntry::where("unit_id", $request['unit'])->whereBetween("checkin", [date("Y-m-d H:i:s",strtotime("-3 Months")), date("Y-m-d H:i:s")])->orderBy('id', 'asc')->limit($limit)->offset(($page-1) * $limit)->get();
+      $visitors = VisitorEntry::where("unit_id", $request['unit'])->whereBetween("checkin", [date("Y-m-d H:i:s",strtotime("-3 Months")), date("Y-m-d H:i:s")])->orderBy('id', 'desc')->limit($limit)->offset(($page-1) * $limit)->get();
     } else {
-      $visitors = VisitorEntry::whereBetween("checkin", [date("Y-m-d H:i:s",strtotime("-3 Months")), date("Y-m-d H:i:s")])->orderBy('id', 'asc')->limit($limit)->offset(($request['page']-1) * $limit)->get();
+      $visitors = VisitorEntry::whereBetween("checkin", [date("Y-m-d H:i:s",strtotime("-3 Months")), date("Y-m-d H:i:s")])->orderBy('id', 'desc')->limit($limit)->offset(($request['page']-1) * $limit)->get();
     }
 
     $blocks = Block::orderBy('name', 'asc')->limit(50)->get();
